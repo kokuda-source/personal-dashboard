@@ -4,21 +4,22 @@
 // ============================================================
 
 import { getItem, setItem } from './utils/storage.js';
+import { setAccessToken } from './utils/gas-client.js';
 import { initGoogleAuth, requestSignIn, isSignedIn } from './auth/google-auth.js';
 import { initGmailModule, loadGmail } from './modules/gmail.js';
 import { initCalendarModule, loadCalendar } from './modules/calendar.js';
-import { initTodoModule } from './modules/todo.js';
-import { initReminderModule } from './modules/reminder.js';
+import { initTodoModule, syncTodoFromGAS } from './modules/todo.js';
+import { initReminderModule, syncReminderFromGAS } from './modules/reminder.js';
 import { initNewsModule, loadNews } from './modules/news.js';
-import { initMemoModule } from './modules/memo.js';
+import { initMemoModule, syncMemoFromGAS } from './modules/memo.js';
 import { initPomodoroModule } from './modules/pomodoro.js';
-import { initStatsModule } from './modules/stats.js';
+import { initStatsModule, syncStatsFromGAS } from './modules/stats.js';
 import { renderQuickLinks } from './modules/quicklinks.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
 
-  // GAS/localStorageで完結する機能は即座に初期化
+  // ローカルキャッシュからの即時表示はサインイン前でも行う
   initTodoModule();
   initReminderModule();
   initMemoModule();
@@ -34,10 +35,16 @@ document.addEventListener('DOMContentLoaded', () => {
   initGmailModule();
   initCalendarModule();
 
-  // Google認証(初期化 → 成功時にGmail/Calendarを取得)
+  // Google認証(初期化 → 成功時にGmail/Calendar取得 + GAS同期を開始)
   initGoogleAuth((accessToken) => {
+    setAccessToken(accessToken); // GASへの本人確認に使うトークンを共有
     loadGmail(accessToken);
     loadCalendar(accessToken);
+    // サインイン前は同期に失敗していたはずなので、ここで改めて同期する
+    syncTodoFromGAS();
+    syncReminderFromGAS();
+    syncMemoFromGAS();
+    syncStatsFromGAS();
     updateSignInButton(true);
   });
 

@@ -48,10 +48,10 @@ export function initTodoModule() {
   els.tomorrowForm.addEventListener('submit', onSubmitTomorrow);
 
   // 裏でGASの最新データを取得して上書き
-  syncFromGAS();
+  syncTodoFromGAS();
 }
 
-async function syncFromGAS() {
+export async function syncTodoFromGAS() {
   try {
     const [todoRows, tomorrowRows] = await Promise.all([
       fetchSheet('Todo'),

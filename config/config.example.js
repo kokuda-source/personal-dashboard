@@ -16,19 +16,19 @@ export const CONFIG = {
   GOOGLE_CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
 
   // Gmail / Calendar への読み取り専用アクセス権限
+  // + GAS側で「本人確認」するためのメールアドレス取得権限
   GOOGLE_SCOPES: [
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/calendar.readonly',
+    'https://www.googleapis.com/auth/userinfo.email',
   ].join(' '),
 
   // ---- GAS (Google Apps Script) Web App ----
   // gas/Code.gs をデプロイした際に発行される URL
   // 例: https://script.google.com/macros/s/XXXXXXXX/exec
   GAS_WEB_APP_URL: 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec',
-
-  // gas/Code.gs 側の SECRET_TOKEN と同じ文字列にしてください
-  // (第三者による不正なアクセス・書き込みを防ぐための簡易トークン)
-  GAS_SECRET_TOKEN: 'set-a-long-random-string-here',
+  // ※読み書きの認可はGoogleサインインしたご本人のアカウントかどうかで
+  //   GAS側が検証するため、ここに秘密のトークンを持つ必要はありません。
 
   // ---- ニュース取得 (RSS -> JSON変換) ----
   // rss2json 経由で取得する教育系ニュースのRSSフィードURL

@@ -85,6 +85,15 @@ input, select, textarea {
   gap: 10px;
 }
 
+.app-header__hint {
+  font-size: 0.72rem;
+  color: var(--header-ink);
+  opacity: 0.65;
+}
+@media (max-width: 640px) {
+  .app-header__hint { display: none; }
+}
+
 .btn {
   border: 1px solid var(--line);
   background: var(--card-bg);

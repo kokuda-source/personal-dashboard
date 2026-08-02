@@ -30,7 +30,7 @@ export function initStatsModule() {
 
   statsCache = getItem('stats_cache', defaultStats());
   render();
-  syncFromGAS();
+  syncStatsFromGAS();
 }
 
 function makeId(campus, grade) {
@@ -47,7 +47,7 @@ function defaultStats() {
   return rows;
 }
 
-async function syncFromGAS() {
+export async function syncStatsFromGAS() {
   try {
     const rows = await fetchSheet('Stats');
     if (rows.length > 0) {

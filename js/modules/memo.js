@@ -17,10 +17,10 @@ export function initMemoModule() {
   els.textarea.value = getItem('memo_cache', '');
   els.textarea.addEventListener('input', onInput);
 
-  syncFromGAS();
+  syncMemoFromGAS();
 }
 
-async function syncFromGAS() {
+export async function syncMemoFromGAS() {
   try {
     const rows = await fetchSheet('Memo');
     if (rows.length > 0) {

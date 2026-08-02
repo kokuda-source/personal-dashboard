@@ -1,20 +1,26 @@
 // ============================================================
 // config.js
-// 実運用設定(.gitignoreにより GitHub には公開されません)
+// 実運用設定
+//
+// 【重要】GAS_SECRET_TOKENは廃止しました。
+// 現在はGoogleサインイン時の本人確認(アクセストークン検証)で
+// データを保護しているため、このファイルが第三者に見られても
+// 実際にご本人のGoogleアカウントでログインしない限り、
+// ToDo・メモ・実績データ等の読み書きはできません。
 // ============================================================
 
 export const CONFIG = {
-  // ---- Google OAuth (Gmail / Calendar 用) ----
+  // ---- Google OAuth (Gmail / Calendar / 本人確認 用) ----
   GOOGLE_CLIENT_ID: '673532651528-6bmogmg1pvm8edf7vosq4eouak8a65ir.apps.googleusercontent.com',
 
   GOOGLE_SCOPES: [
     'https://www.googleapis.com/auth/gmail.readonly',
     'https://www.googleapis.com/auth/calendar.readonly',
+    'https://www.googleapis.com/auth/userinfo.email',
   ].join(' '),
 
   // ---- GAS (Google Apps Script) Web App ----
   GAS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbyiF5tA_pM-W-kSUZEaT317hRzzHRhlpfHJJXatY_GgzFBozK8kjkaj6VsP2y5EtKhrTA/exec',
-  GAS_SECRET_TOKEN: 'okd112358',
 
   // ---- ニュース取得 (RSS -> JSON変換) ----
   NEWS_RSS_URL: 'https://news.yahoo.co.jp/rss/categories/domestic.xml',
@@ -23,7 +29,6 @@ export const CONFIG = {
   // ---- クイックリンク ----
   MAIN_PORTAL_URL: 'https://kokuda-source.github.io/OKD_math_infomatics_main/',
 
-  // Driveフォルダに限らず、日常的によく開く業務ツールをまとめて配置
   QUICK_LINKS: [
     { label: '創学ログ', url: 'https://docs.google.com/spreadsheets/d/1ukYpBC23NM0wRJkduGcvu0cQ3AYuHuEPTE0tIWa_Aek/edit?usp=drive_link' },
     { label: '問い合わせシート', url: 'https://docs.google.com/spreadsheets/d/1-wP8CpRlUiIjbHXNUXk1TKIWhIDKQNwFFnNAiPzIP0k/edit?usp=drive_link' },
@@ -34,7 +39,6 @@ export const CONFIG = {
   ],
 
   DRIVE_LINKS: [
-    // 特定のDriveフォルダを個別に追加したい場合はここに
     // { label: '高3ハイレベル 教材フォルダ', url: 'https://drive.google.com/drive/folders/XXXXXXXX' },
   ],
 

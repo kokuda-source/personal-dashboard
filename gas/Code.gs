@@ -2,10 +2,21 @@
  * ============================================================
  * 個人用ポータルダッシュボード - GAS バックエンド
  * ============================================================
+ * 【認証方式(重要)】
+ * フロントエンドから送られてくる「Googleアクセストークン」を、この
+ * スクリプトがGoogle自身に問い合わせて検証します。
+ *   1. トークンが本物か(Google発行のものか)
+ *   2. どのGoogleアカウントのものか(email)
+ *   3. そのemailが ALLOWED_EMAILS に含まれているか
+ * の3点をすべて満たした場合のみ、読み書きを許可します。
+ * これにより、config.js やこのURLが第三者に見られても、
+ * 実際にあなたのGoogleアカウントでログインしない限り
+ * データにはアクセスできません。
+ *
  * 使い方:
  *  1. script.google.com で新規プロジェクトを作成し、このファイルの
  *     内容を貼り付ける
- *  2. SHEET_ID と SECRET_TOKEN を自分の値に書き換える
+ *  2. SHEET_ID / OAUTH_CLIENT_ID / ALLOWED_EMAILS を自分の値に書き換える
  *  3. 「デプロイ」>「新しいデプロイ」>種類「ウェブアプリ」
  *     - 次のユーザーとして実行: 自分
  *     - アクセスできるユーザー: 全員
@@ -16,8 +27,14 @@
 // ↓自分のスプレッドシートのID(URLの /d/ と /edit の間の文字列)
 const SHEET_ID = '1e_FRCsA7IVAKCITl74e1iO4LX-xtCjuPaojrWu5pmYw';
 
-// ↓config.js の GAS_SECRET_TOKEN と同じ文字列にすること
-const SECRET_TOKEN = 'okd112358';
+// ↓config.js の GOOGLE_CLIENT_ID と同じ値にすること
+// (この値と一致するアクセストークンだけを正規のものとして受け付ける)
+const OAUTH_CLIENT_ID = '673532651528-6bmogmg1pvm8edf7vosq4eouak8a65ir.apps.googleusercontent.com';
+
+// ↓データの読み書きを許可するGoogleアカウントのメールアドレス一覧
+// (あなた自身のGmailアドレスを入れてください。複数人に許可する場合は
+//  配列に追加できます)
+const ALLOWED_EMAILS = ['k_okuda@sougakugr.jp'];
 
 // 各シートの1行目(ヘッダー)定義。初回アクセス時に自動作成されます。
 const SHEET_SCHEMAS = {
@@ -29,38 +46,66 @@ const SHEET_SCHEMAS = {
   Stats: ['id', 'campus', 'grade', 'enrolled', 'recruit', 'withdrawn', 'suspended', 'sourceUrl', 'updatedAt'],
 };
 
+// 読み取り・書き込みとも、すべてPOSTのみで受け付ける
+// (GETのクエリパラメータにトークンを含めるとアクセスログ等に残る
+//  リスクがあるため、あえてGETは使わない設計にしている)
 function doGet(e) {
-  try {
-    if (e.parameter.token !== SECRET_TOKEN) return jsonResponse({ error: 'unauthorized' }, 401);
-    const sheetName = e.parameter.sheet;
-    if (!SHEET_SCHEMAS[sheetName]) return jsonResponse({ error: 'invalid sheet' }, 400);
-    const rows = readSheet(sheetName);
-    return jsonResponse({ data: rows });
-  } catch (err) {
-    return jsonResponse({ error: String(err) }, 500);
-  }
+  return jsonResponse({ error: 'このAPIはPOSTのみ対応しています' });
 }
 
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
-    if (body.token !== SECRET_TOKEN) return jsonResponse({ error: 'unauthorized' }, 401);
-    const sheetName = body.sheet;
-    if (!SHEET_SCHEMAS[sheetName]) return jsonResponse({ error: 'invalid sheet' }, 400);
 
-    if (body.action === 'upsert') {
+    const email = verifyAccessToken_(body.accessToken);
+    if (!email) return jsonResponse({ error: 'unauthorized: 有効なGoogleログインが必要です' });
+    if (ALLOWED_EMAILS.indexOf(email) === -1) return jsonResponse({ error: 'forbidden: このアカウントには権限がありません' });
+
+    const sheetName = body.sheet;
+    if (!SHEET_SCHEMAS[sheetName]) return jsonResponse({ error: 'invalid sheet' });
+
+    if (body.action === 'read') {
+      return jsonResponse({ data: readSheet(sheetName) });
+    } else if (body.action === 'upsert') {
       upsertRow(sheetName, body.payload);
+      return jsonResponse({ success: true });
     } else if (body.action === 'delete') {
       deleteRow(sheetName, body.payload.id);
+      return jsonResponse({ success: true });
     } else if (body.action === 'replaceAll') {
-      // Memo/Statsのような「常に全件書き換え」向け
       replaceAllRows(sheetName, body.payload.rows);
-    } else {
-      return jsonResponse({ error: 'invalid action' }, 400);
+      return jsonResponse({ success: true });
     }
-    return jsonResponse({ success: true });
+    return jsonResponse({ error: 'invalid action' });
   } catch (err) {
-    return jsonResponse({ error: String(err) }, 500);
+    return jsonResponse({ error: String(err) });
+  }
+}
+
+/**
+ * Googleのtokeninfoエンドポイントにアクセストークンを問い合わせて、
+ * ・正規のトークンか
+ * ・自分のOAuthクライアント向けに発行されたものか(なりすまし防止)
+ * ・メールアドレスが確認済みか
+ * を検証し、問題なければメールアドレスを返す。不正なら null を返す。
+ */
+function verifyAccessToken_(accessToken) {
+  if (!accessToken) return null;
+  try {
+    const res = UrlFetchApp.fetch(
+      'https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + encodeURIComponent(accessToken),
+      { muteHttpExceptions: true }
+    );
+    if (res.getResponseCode() !== 200) return null;
+
+    const info = JSON.parse(res.getContentText());
+    if (info.aud !== OAUTH_CLIENT_ID) return null; // 別アプリ向けトークンのなりすまし防止
+    if (!info.email) return null;
+    if (info.email_verified !== 'true' && info.email_verified !== true) return null;
+
+    return info.email;
+  } catch (err) {
+    return null;
   }
 }
 
@@ -136,9 +181,7 @@ function replaceAllRows(sheetName, rows) {
   }
 }
 
-function jsonResponse(obj, statusCode) {
-  // GASのContentServiceはHTTPステータスを自由に設定できないため、
-  // エラー内容はJSONボディ側に含めてフロント側で判定します。
+function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }

@@ -28,10 +28,10 @@ export function initReminderModule() {
   els.type.addEventListener('change', updateValueOptions);
   updateValueOptions();
 
-  syncFromGAS();
+  syncReminderFromGAS();
 }
 
-async function syncFromGAS() {
+export async function syncReminderFromGAS() {
   try {
     const rows = await fetchSheet('Reminders');
     reminderCache = rows;

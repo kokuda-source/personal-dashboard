@@ -32,21 +32,50 @@
 
 ---
 
-## 2. GAS(Google Apps Script)のデプロイ
+## 2. Google Cloud ConsoleでOAuthクライアントIDを作成
+
+Gmail・Googleカレンダーへのアクセスに加えて、GAS側の**本人確認**にも使う
+重要な設定です(先にこちらを行います)。
+
+1. [Google Cloud Console](https://console.cloud.google.com/) にアクセスし、
+   新規プロジェクトを作成(または既存のものを使用)
+2. 左メニュー「APIとサービス」→「有効なAPIとサービス」→「+ APIとサービスの有効化」で
+   以下の2つを検索して有効化
+   - Gmail API
+   - Google Calendar API
+3. 「APIとサービス」→「OAuth同意画面」を設定
+   - User Type: **外部**(個人のGmailアカウントの場合)
+   - アプリ名、サポートメールなど必須項目を入力
+   - スコープの追加で `gmail.readonly`・`calendar.readonly`・`userinfo.email` の3つを追加
+     (`userinfo.email` はGAS側で「本当にあなたのアカウントか」を確認するために必須です)
+   - テストユーザーに自分のGoogleアカウントを追加
+   - (個人利用なので「公開」の審査は不要。「テスト」ステータスのままでOK)
+4. 「APIとサービス」→「認証情報」→「+ 認証情報を作成」→「OAuthクライアントID」
+   - アプリケーションの種類: **ウェブアプリケーション**
+   - 承認済みのJavaScript生成元に以下を追加
+     - `https://<あなたのGitHubユーザー名>.github.io`
+     - ローカルで動作確認したい場合は `http://localhost:8000` なども追加
+5. 作成後に表示される **クライアントID**(`〜.apps.googleusercontent.com`)をコピー
+   (この後の手順2つで使うので控えておいてください)
+
+---
+
+## 3. GAS(Google Apps Script)のデプロイ
 
 1. スプレッドシートのメニューから「拡張機能」→「Apps Script」を開く
 2. デフォルトで表示される `Code.gs` の中身を全部削除し、このプロジェクトの
    `gas/Code.gs` の内容を丸ごと貼り付ける
-3. 貼り付けたコードの中の以下2箇所を書き換える
+3. 貼り付けたコードの中の以下3箇所を書き換える
 
    ```javascript
-   const SHEET_ID = 'YOUR_SPREADSHEET_ID'; // 手順1でメモしたID
-   const SECRET_TOKEN = 'set-a-long-random-string-here'; // 好きな長いランダム文字列
+   const SHEET_ID = 'YOUR_SPREADSHEET_ID'; // 手順1でメモしたスプレッドシートID
+   const OAUTH_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // 手順2でコピーしたクライアントID
+   const ALLOWED_EMAILS = ['your-email@gmail.com']; // あなた自身のGmailアドレス
    ```
 
-   `SECRET_TOKEN` は「知らない人にURLを推測されてもデータを見られない/
-   書き換えられないようにする」ための簡易的な合言葉です。適当な長い文字列
-   (例: パスワード生成ツールで作った32文字程度のランダム文字列)にしてください。
+   `ALLOWED_EMAILS` に列挙したGoogleアカウントでサインインした場合のみ、
+   ToDo・メモ・実績データ等の読み書きが許可されます。第三者がconfig.jsや
+   このURLを知っても、このリストに載っていないアカウントでは一切操作できません。
 
 4. 画面右上の「デプロイ」→「新しいデプロイ」をクリック
 5. 歯車アイコン→種類の選択で「ウェブアプリ」を選ぶ
@@ -60,31 +89,6 @@
 > 補足: コードを修正した場合は「新しいデプロイ」ではなく「デプロイを管理」→
 > 既存デプロイの鉛筆アイコン→バージョン「新バージョン」→デプロイ、で更新できます
 > (これをしないと修正が反映されません)。
-
----
-
-## 3. Google Cloud ConsoleでOAuthクライアントIDを作成
-
-Gmail・Googleカレンダーへのアクセスに必要です。
-
-1. [Google Cloud Console](https://console.cloud.google.com/) にアクセスし、
-   新規プロジェクトを作成(または既存のものを使用)
-2. 左メニュー「APIとサービス」→「有効なAPIとサービス」→「+ APIとサービスの有効化」で
-   以下の2つを検索して有効化
-   - Gmail API
-   - Google Calendar API
-3. 「APIとサービス」→「OAuth同意画面」を設定
-   - User Type: **外部**(個人のGmailアカウントの場合)
-   - アプリ名、サポートメールなど必須項目を入力
-   - スコープの追加で `gmail.readonly` と `calendar.readonly` を追加
-   - テストユーザーに自分のGoogleアカウントを追加
-   - (個人利用なので「公開」の審査は不要。「テスト」ステータスのままでOK)
-4. 「APIとサービス」→「認証情報」→「+ 認証情報を作成」→「OAuthクライアントID」
-   - アプリケーションの種類: **ウェブアプリケーション**
-   - 承認済みのJavaScript生成元に以下を追加
-     - `https://<あなたのGitHubユーザー名>.github.io`
-     - ローカルで動作確認したい場合は `http://localhost:8000` なども追加
-5. 作成後に表示される **クライアントID**(`〜.apps.googleusercontent.com`)をコピー
 
 ---
 
@@ -106,16 +110,18 @@ Gmail・Googleカレンダーへのアクセスに必要です。
 
    | 項目 | 値 |
    |---|---|
-   | `GOOGLE_CLIENT_ID` | 手順3でコピーしたクライアントID |
-   | `GAS_WEB_APP_URL` | 手順2でコピーしたウェブアプリURL |
-   | `GAS_SECRET_TOKEN` | 手順2で設定したSECRET_TOKENと**同じ文字列** |
+   | `GOOGLE_CLIENT_ID` | 手順2でコピーしたクライアントID |
+   | `GAS_WEB_APP_URL` | 手順3でコピーしたウェブアプリURL |
    | `NEWS_RSS_URL` | お好みのニュースRSS(手順4) |
    | `MAIN_PORTAL_URL` | 既に `https://kokuda-source.github.io/OKD_math_infomatics_main/` を設定済み |
    | `QUICK_LINKS` / `DRIVE_LINKS` | よく使うリンクを追加 |
    | `CAMPUSES` | 担当している校舎名の配列 |
 
-3. `config.js` は `.gitignore` に登録済みなので、そのままGitHubにpushしても
-   公開されません(誤って消さないよう注意してください)。
+3. `config.js` は**そのままGitHubにpushして問題ありません**。以前は
+   秘密のトークンをこのファイルに書いていたため`.gitignore`で除外して
+   いましたが、現在はGoogle本人確認方式(手順3の`ALLOWED_EMAILS`)で
+   データを保護しているため、このファイルの中身が公開されても
+   実害はありません(むしろpushし忘れるとサイトが正しく動きません)。
 
 ---
 
@@ -147,17 +153,17 @@ python3 -m http.server 8000
    git remote add origin https://github.com/<あなたのユーザー名>/personal-dashboard.git
    git push -u origin main
    ```
-   ※ `config/config.js` は `.gitignore` によって自動的に除外されます
+   ※ `config/config.js` も含めて**そのままpushしてください**(除外されません)
 3. GitHubリポジトリの「Settings」→「Pages」を開く
 4. 「Build and deployment」の「Source」で **Deploy from a branch** を選択
 5. Branch を `main` / `/(root)` にして保存
 6. 数分待つと `https://<あなたのユーザー名>.github.io/personal-dashboard/` で公開されます
-7. 手順3のOAuthクライアントIDの「承認済みのJavaScript生成元」に、この
+7. 手順2のOAuthクライアントIDの「承認済みのJavaScript生成元」に、この
    `https://<あなたのユーザー名>.github.io` が登録済みであることを再確認してください
 
 > 注意: GitHub Pagesは公開リポジトリでのみ無料で使えます(個人アカウントの場合)。
-> `config.js` は除外されていますが、リポジトリ自体は誰でも閲覧できる状態になる
-> 点は理解した上で運用してください。
+> リポジトリ自体は誰でも閲覧できる状態になりますが、`config.js`の中身が
+> 見られてもGoogle本人確認(手順3の`ALLOWED_EMAILS`)によりデータは保護されます。
 
 ---
 
@@ -173,18 +179,37 @@ Googleスプレッドシート経由で同期されます。ホーム画面に�
 
 ---
 
-## 9. 【重要】校舎別実績カウンターの仕様変更に伴う移行手順
+## 9. 【重要】既存デプロイからの移行手順
 
-校舎別実績カウンターが「校舎ごと」から「校舎×学年(高1/高2/高3)ごと」に変更され、
-スプレッドシートの列構成(スキーマ)が変わりました。既に一度GASをデプロイ済みの方は、
-以下の対応が必要です。
+過去にこのダッシュボードを一度セットアップ済みの方は、以下2つの
+仕様変更に伴う対応が必要です。
 
-1. `gas/Code.gs` の中身を、今回更新した内容で**まるごと上書き**する
-2. スプレッドシートを開き、**「Stats」シートのタブを削除**する
+### 9-1. 認証方式の変更(秘密トークン → Google本人確認)
+
+セキュリティ強化のため、`GAS_SECRET_TOKEN`による認証を廃止し、
+Googleサインインしたご本人かどうかをGAS側で検証する方式に変更しました。
+
+1. `gas/Code.gs` を今回の内容で**まるごと上書き**する
+2. コード内の `OAUTH_CLIENT_ID` に、あなたのGoogle Cloud ConsoleのOAuth
+   クライアントIDを設定する(`config.js`の`GOOGLE_CLIENT_ID`と同じ値)
+3. `ALLOWED_EMAILS` に、あなた自身のGmailアドレスを設定する
+4. Google Cloud Consoleの「OAuth同意画面」のスコープに
+   `userinfo.email` を追加する(手順2を参照)
+5. `config.js` から `GAS_SECRET_TOKEN` の行を削除し、`GOOGLE_SCOPES` に
+   `https://www.googleapis.com/auth/userinfo.email` を追加する
+6. Apps Scriptを「新バージョン」で再デプロイする
+7. `.gitignore` から `config/config.js` の除外設定を削除し、
+   `config.js` をコミット・pushする(もう秘密情報を含まないため)
+8. ブラウザのキャッシュされたサインイン情報をクリアするため、一度
+   ダッシュボードで「サインアウト」相当の操作(ブラウザのサイトデータ削除、
+   またはシークレットウィンドウでの再アクセス)をしてから、改めて
+   「Googleでサインイン」を押してスコープの再同意を行ってください
+
+### 9-2. 校舎別実績カウンターのスキーマ変更(校舎ごと → 校舎×学年ごと)
+
+1. スプレッドシートを開き、**「Stats」シートのタブを削除**する
    (右クリック→削除。列構成が古いままだとデータがズレて保存されるため)
-3. Apps Scriptの「デプロイを管理」→ 既存デプロイの鉛筆アイコン→
-   バージョン「新バージョン」を選んで**再デプロイ**する
-4. ダッシュボードを開き直すと、「Stats」シートが新しい列構成
+2. ダッシュボードを開き直すと、「Stats」シートが新しい列構成
    (`id, campus, grade, enrolled, recruit, withdrawn, suspended, sourceUrl, updatedAt`)
    で自動的に再作成されます
 
@@ -192,7 +217,9 @@ Googleスプレッドシート経由で同期されます。ホーム画面に�
 
 | 症状 | 原因・対処 |
 |---|---|
-| ToDo等を追加してもスプレッドシートに反映されない | `config.js` の `GAS_SECRET_TOKEN` と `Code.gs` の `SECRET_TOKEN` が一致しているか確認。GASのコードを直した場合は「新バージョンでデプロイ」を忘れていないか確認 |
+| ToDo等がサインイン前は保存されない/同期されない | **仕様通りの動作です。** Googleサインイン後にのみスプレッドシートへ同期されます(サインイン前はこの端末のみに保存) |
+| サインインしてもToDo等が同期されない(unauthorizedエラー) | `Code.gs` の `OAUTH_CLIENT_ID` が `config.js` の `GOOGLE_CLIENT_ID` と一致しているか確認 |
+| サインインしても「forbidden」エラーが出る | `Code.gs` の `ALLOWED_EMAILS` に、実際にサインインしたGoogleアカウントのメールアドレスが入っているか確認 |
 | Googleサインインを押しても何も起きない(特にスマホ) | ポップアップブロックの可能性。ブラウザのポップアップ許可設定を確認 |
 | Gmail/カレンダーが「取得に失敗しました」と出る | アクセストークンは約1時間で失効します。再度サインインボタンを押してください |
 | ニュースが表示されない | RSS2JSONの無料枠(1日あたりの上限)を超えている可能性。時間をおくか `RSS2JSON_API_KEY` を取得して設定してください |
