@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>個人用ポータルダッシュボード</title>
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/style.css">
+<!-- Google Identity Services (Gmail/Calendar OAuth用) -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <h1 class="app-header__title">CONTROL DECK</h1>
+    <span class="app-header__date" id="header-date"></span>
+  </div>
+  <div class="app-header__controls">
+    <button id="google-signin-btn" class="btn btn--primary">Googleでサインイン</button>
+    <button id="theme-toggle" class="btn">🌙 ダークモード</button>
+  </div>
+</header>
+
+<div id="reminder-banner" class="reminder-banner is-hidden"></div>
+
+<main class="dashboard-grid">
+
+  <!-- Gmail -->
+  <section class="card" id="card-gmail">
+    <div class="card__header">
+      <h2 class="card__title"><span class="card__title-tag">01</span>メール</h2>
+      <span class="card__status" id="gmail-status"></span>
+    </div>
+    <div class="gmail-count">未読 <span id="gmail-unread-count">-</span> 件</div>
+    <div class="card__body">
+      <ul id="gmail-list"><li class="empty">サインインすると表示されます</li></ul>
+    </div>
+  </section>
+
+  <!-- カレンダー -->
+  <section class="card" id="card-calendar">
+    <div class="card__header">
+      <h2 class="card__title"><span class="card__title-tag">02</span>今日・明日の予定</h2>
+      <span class="card__status" id="calendar-status"></span>
+    </div>
+    <div class="card__body calendar-columns">
+      <div>
+        <h4>本日</h4>
+        <ul id="calendar-today-list"><li class="empty">サインインすると表示されます</li></ul>
+      </div>
+      <div>
+        <h4>明日</h4>
+        <ul id="calendar-tomorrow-list"><li class="empty">サインインすると表示されます</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ToDo -->
+  <section class="card" id="card-todo">
+    <div class="card__header">
+      <h2 class="card__title"><span class="card__title-tag">03</span>ToDoリスト</h2>
+    </div>
+    <form id="todo-form" class="todo-form">
+      <input type="text" id="todo-title" placeholder="タスク名" required>
+      <div class="todo-form__row">
+        <label>締切 <input type="date" id="todo-deadline"></label>
+        <label>優先度
+          <select id="todo-priority">
+            <option value="5">5(最高)</option>
+            <option value="4">4</option>
+            <option value="3" selected>3</option>
+            <option value="2">2</option>
+            <option value="1">1(低)</option>
+          </select>
+        </label>
+        <label>所要時間
+          <select id="todo-effort">
+            <option value="1">5分程度</option>
+            <option value="2">15分程度</option>
+            <option value="3" selected>30分程度</option>
+            <option value="4">1時間程度</option>
+            <option value="5">半日以上</option>
+          </select>
+        </label>
+        <button type="submit" class="btn btn--primary">追加</button>
+      </div>
+    </form>
+    <div class="card__body">
+      <ul id="todo-list"></ul>
+    </div>
+  </section>
+
+  <!-- 明日やること -->
+  <section class="card" id="card-tomorrow">
+    <div class="card__header">
+      <h2 class="card__title"><span class="card__title-tag">04</span>明日やること</h2>
+    </div>
+    <form id="tomorrow-form" class="tomorrow-form">
+      <input type="text" id="tomorrow-title" placeholder="タスク名" required>
+      <input type="text" id="tomorrow-memo" placeholder="メモ(任意)">
+      <button type="submit" class="btn btn--primary">追加</button>
+    </form>
+    <div class="card__body">
+      <ul id="tomorrow-list"></ul>
+    </div>
+  </section>
+
+  <!-- ニュース -->
+  <section class="card" id="card-news">
+    <div class="card__header">
+      <h2 class="card__title"><span class="card__title-tag">05</span>教育ニュース</h2>
+      <span class="card__status" id="news-status"></span>
+    </div>
+    <div class="card__body">
+      <ul id="news-list"></ul>
+    </div>
+  </section>
+
+  <!-- メモ -->
+  <section class="card" id="card-memo">
+    <div class="card__header">
+      <h2 class="card__title"><span class="card__title-tag">06</span>メモ帳</h2>
+      <span class="card__status" id="memo-status"></span>
+    </div>
+    <textarea id="memo-textarea" placeholder="サッと書き込めるメモ(自動保存)"></textarea>
+  </section>
+
+  <!-- ポモドーロ -->
+  <section class="card" id="card-pomodoro">
+    <div class="card__header">
+      <h2 class="card__title"><span class="card__title-tag">07</span>ポモドーロ</h2>
+    </div>
+    <div class="pomodoro">
+      <div class="pomodoro-display" id="pomodoro-display">25:00</div>
+      <div class="pomodoro-controls">
+        <button id="pomodoro-start" class="btn btn--primary">開始</button>
+        <button id="pomodoro-reset" class="btn">リセット</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- クイックリンク -->
+  <section class="card" id="card-quicklinks">
+    <div class="card__header">
+      <h2 class="card__title"><span class="card__title-tag">08</span>クイックリンク</h2>
+    </div>
+    <a id="quicklink-portal" class="quicklink-primary" href="#" target="_blank" rel="noopener">教材ポータルを開く</a>
+    <div id="quicklink-list" class="quicklink-list"></div>
+    <div>
+      <h4 style="margin:8px 0 4px;font-size:0.78rem;color:var(--ink-soft);">Driveフォルダ</h4>
+      <ul id="drive-link-list"></ul>
+    </div>
+  </section>
+
+  <!-- 定期業務リマインド管理 -->
+  <section class="card" id="card-reminders">
+    <div class="card__header">
+      <h2 class="card__title"><span class="card__title-tag">09</span>定期業務リマインド設定</h2>
+    </div>
+    <form id="reminder-form" class="reminder-form">
+      <input type="text" id="reminder-title" placeholder="例: 月末締め作業" required>
+      <select id="reminder-type">
+        <option value="monthly">毎月</option>
+        <option value="weekly">毎週</option>
+      </select>
+      <select id="reminder-value"></select>
+      <button type="submit" class="btn btn--primary" style="grid-column:1/-1;">登録</button>
+    </form>
+    <div class="card__body">
+      <ul id="reminder-list"></ul>
+    </div>
+  </section>
+
+  <!-- 校舎別実績カウンター -->
+  <section class="card" id="card-stats">
+    <div class="card__header">
+      <h2 class="card__title"><span class="card__title-tag">10</span>校舎別 数値実績</h2>
+    </div>
+    <div id="stats-summary"></div>
+    <div id="stats-grid" class="stats-grid"></div>
+  </section>
+
+</main>
+
+<script type="module" src="js/main.js"></script>
+<script>
+  document.getElementById('header-date').textContent =
+    new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+</script>
+</body>
+</html>

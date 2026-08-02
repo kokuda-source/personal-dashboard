@@ -1,0 +1,62 @@
+/* ============================================================
+   theme.css
+   デザインコンセプト: 「創学ゼミ コーポレートブランド」
+   ・ロゴから抽出した紺(#1F2774)・赤(#C9151E)を基調とした
+     予備校らしい、信頼感のあるコーポレートデザイン
+   ・数値・時刻・IDにはモノスペースフォントを使い、
+     管理システムとしての精度・実務感を演出
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --font-display: 'Space Grotesk', 'Zen Kaku Gothic New', sans-serif;
+  --font-body: 'Zen Kaku Gothic New', -apple-system, 'Hiragino Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 10px;
+  --shadow-card: 0 1px 2px rgba(16, 23, 55, 0.07), 0 4px 14px rgba(16, 23, 55, 0.06);
+
+  /* ロゴから抽出したブランドカラー(モード共通) */
+  --brand-navy: #1F2774;
+  --brand-red: #C9151E;
+}
+
+/* ---- ライトモード ---- */
+:root[data-theme='light'] {
+  --bg: #EEF0F5;
+  --bg-elevated: #F5F6FA;
+  --card-bg: #FFFFFF;
+  --ink: #10152E;
+  --ink-soft: #565F7C;
+  --line: #DDE1EC;
+  --accent-red: #C9151E;
+  --accent-red-soft: #FAD9D8;
+  --accent-navy: #1F2774;
+  --accent-navy-soft: #E1E3F3;
+  --accent-gold: #B5790A;
+  --accent-gold-soft: #F3E4C4;
+  --overdue-bg: #FAD9D8;
+  --header-bg: #1F2774;
+  --header-ink: #FFFFFF;
+}
+
+/* ---- ダークモード ---- */
+:root[data-theme='dark'] {
+  --bg: #0C0F22;
+  --bg-elevated: #131936;
+  --card-bg: #171E40;
+  --ink: #EBEDF6;
+  --ink-soft: #9099BC;
+  --line: #2A3260;
+  --accent-red: #F0525C;
+  --accent-red-soft: #3B1E27;
+  --accent-navy: #7C89F0;
+  --accent-navy-soft: #232C5C;
+  --accent-gold: #E8B23D;
+  --accent-gold-soft: #3A2E12;
+  --overdue-bg: #3B1E27;
+  --header-bg: #10132A;
+  --header-ink: #EBEDF6;
+}
